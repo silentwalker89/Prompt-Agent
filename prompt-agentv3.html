@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Hero Academy | Multi-Style Architect</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background-color: #fff7ed;
+      background-image: radial-gradient(#ffedd5 2px, transparent 2px);
+      background-size: 30px 30px;
+    }
+    h1,
+    h2 {
+      font-family: 'Fredoka One', cursive;
+    }
+    .card {
+      border-radius: 35px;
+      border: 5px solid #000;
+      box-shadow: 10px 10px 0px #000;
+    }
+    .btn-pop {
+      transition: all 0.2s;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0px #000;
+    }
+    .btn-pop:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px #000;
+    }
+    .input-box {
+      border: 3px solid #000;
+      border-radius: 15px;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-10">
+  <div id="app" class="max-w-7xl mx-auto">
+    <header class="text-center mb-10">
+      <h1 class="text-6xl text-orange-500 drop-shadow-md mb-2">
+        Prompt Hero Academy 🚀
+      </h1>
+      <p class="text-xl font-bold text-slate-600">
+        Choose your blueprint and build a super-prompt!
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Sidebar: Framework selection -->
+      <div class="lg:col-span-3 space-y-4">
+        <h3
+          class="font-black uppercase tracking-widest text-sm text-slate-400 ml-2"
+        >
+          Select Blueprint
+        </h3>
+        <button
+          v-for="(f, key) in frameworks"
+          :key="key"
+          @click="changeFramework(key)"
+          :class="[
+            'w-full text-left p-4 rounded-2xl font-bold btn-pop flex flex-col',
+            currentFramework === key ? 'bg-yellow-400' : 'bg-white'
+          ]"
+        >
+          <span>{{ f.name }}</span>
+          <span
+            class="text-[10px] opacity-70 uppercase tracking-tighter"
+            >{{ f.tagline }}</span
+          >
+        </button>
+      </div>
+
+      <!-- Middle: Wizard inputs -->
+      <div class="lg:col-span-5 card bg-white p-8 relative">
+        <div class="mb-6 flex items-center justify-between">
+          <span
+            class="bg-purple-100 text-purple-700 px-4 py-1 rounded-full text-xs font-black uppercase border-2 border-purple-700"
+          >
+            Step {{ currentStep + 1 }} of {{ currentFields.length }}
+          </span>
+        </div>
+
+        <div class="min-h-[350px]">
+          <h2 class="text-3xl mb-2 text-slate-800">
+            {{ currentFields[currentStep].label }}
+          </h2>
+          <div class="bg-blue-50 p-4 rounded-xl border-2 border-blue-200 mb-3">
+            <p class="text-sm font-bold text-blue-600 italic">
+              Example: "{{ currentFields[currentStep].example }}"
+            </p>
+          </div>
+          <small class="block mb-3 text-xs text-slate-500">
+            Tip: Be specific. Add limits (e.g., “If unsure, say you don’t know.
+            Don’t invent URLs or statistics.”).
+          </small>
+
+          <textarea
+            v-model="activeForm[currentFields[currentStep].key]"
+            :placeholder="currentFields[currentStep].placeholder"
+            class="input-box w-full p-6 text-lg h-44 focus:ring-4 ring-yellow-200 outline-none transition-all"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-between mt-8 items-center">
+          <button
+            @click="prev"
+            :disabled="currentStep === 0"
+            class="btn-pop bg-slate-100 px-6 py-3 rounded-xl font-bold disabled:opacity-30"
+          >
+            Back
+          </button>
+
+          <div class="flex items-center gap-3">
+            <span
+              v-if="!isComplete"
+              class="text-xs text-red-500 font-semibold hidden md:inline"
+            >
+              Fill all steps for strongest prompt.
+            </span>
+
+            <button
+              v-if="currentStep < currentFields.length - 1"
+              @click="next"
+              class="btn-pop bg-blue-400 text-white px-8 py-3 rounded-xl font-bold"
+            >
+              Next Hero Power!
+            </button>
+            <button
+              v-else
+              @click="copy"
+              :disabled="!isComplete"
+              class="btn-pop bg-green-400 text-white px-8 py-3 rounded-xl font-bold disabled:opacity-40"
+            >
+              Copy Secret Scroll! 🎉
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Generated prompt -->
+      <div class="lg:col-span-4">
+        <div
+          class="card bg-slate-900 p-8 text-white h-full relative overflow-hidden"
+        >
+          <div class="absolute -right-4 -top-4 opacity-10 rotate-12">
+            <svg
+              width="200"
+              height="200"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+              />
+            </svg>
+          </div>
+          <h3
+            class="text-yellow-400 uppercase font-black text-sm tracking-widest mb-4"
+          >
+            The Final Scroll
+          </h3>
+          <div
+            class="font-mono text-xs md:text-sm leading-relaxed whitespace-pre-wrap opacity-90 border-l-4 border-yellow-400 pl-4 py-2 max-h-[520px] overflow-auto"
+          >
+{{ generatedPrompt }}
+          </div>
+          <div
+            v-if="copyDone"
+            class="mt-6 bg-green-500/20 text-green-400 p-3 rounded-xl border border-green-500/50 text-center font-bold animate-pulse"
+          >
+            COPIED TO CLIPBOARD! 🚀
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+      setup() {
+        const currentStep = ref(0);
+        const currentFramework = ref('RISEN');
+        const copyDone = ref(false);
+
+        // Store separate form data per framework so switching doesn't lose work
+        const allFormData = ref({
+          RISEN: {},
+          CARE: {},
+          TAG: {}
+        });
+
+        const frameworks = {
+          RISEN: {
+            name: 'RISEN',
+            tagline: 'The All-Rounder',
+            fields: [
+              {
+                key: 'role',
+                label: 'Define the Role',
+                placeholder: 'Expert Scientist, Senior Frontend Engineer, Growth Marketer...',
+                example: 'A master chef from Italy who explains concepts clearly to beginners.'
+              },
+              {
+                key: 'task',
+                label: 'The Task',
+                placeholder: 'Explain, write, analyze, brainstorm, refactor...',
+                example: 'Explain why pizza is round, in a way a 10-year-old can understand.'
+              },
+              {
+                key: 'steps',
+                label: 'Process Steps',
+                placeholder: 'How should the AI think or structure the answer?',
+                example: 'First explain the dough, then the shape, then how it is baked.'
+              },
+              {
+                key: 'example',
+                label: 'Style Example',
+                placeholder: 'Tone or example output.',
+                example: 'Use a funny Italian accent and light humor, but stay factual.'
+              },
+              {
+                key: 'constraints',
+                label: 'Constraints & Boundaries',
+                placeholder: 'What to avoid, limits, and safety rules.',
+                example: 'No medical advice, no strong opinions, keep it under 300 words.'
+              },
+              {
+                key: 'sources',
+                label: 'Known Sources/Context (If Any)',
+                placeholder: 'Paste context or say “no extra context, use only your training data”.',
+                example: 'Use only the product specs I pasted earlier; do not invent new features.'
+              },
+              {
+                key: 'format',
+                label: 'Desired Output Format',
+                placeholder: 'Bullets, steps, Markdown table, JSON schema, etc.',
+                example: 'Return a Markdown table with columns: Reason, Explanation, Real-life analogy.'
+              },
+              {
+                key: 'nuance',
+                label: 'The Nuance',
+                placeholder: 'Edge cases, subtle preferences.',
+                example: 'If something is uncertain, clearly say you are not sure and offer options.'
+              }
+            ]
+          },
+          CARE: {
+            name: 'CARE',
+            tagline: 'Best for Results',
+            fields: [
+              {
+                key: 'context',
+                label: 'The Context',
+                placeholder: 'Who you are, what you are doing, relevant background.',
+                example: 'I am building a treehouse with basic tools and a limited budget.'
+              },
+              {
+                key: 'action',
+                label: 'Action Needed',
+                placeholder: 'What the AI should do in this context.',
+                example: 'Give me a detailed list of wood and hardware I need.'
+              },
+              {
+                key: 'result',
+                label: 'Final Goal',
+                placeholder: 'What success looks like for you.',
+                example: 'A shopping list I can take to a hardware store today.'
+              },
+              {
+                key: 'format',
+                label: 'Desired Output Format',
+                placeholder: 'Table, bullet list, numbered steps, etc.',
+                example: 'Return a Markdown table with columns: Item, Quantity, Notes.'
+              },
+              {
+                key: 'constraints',
+                label: 'Constraints & Boundaries',
+                placeholder: 'Budget, safety, what to avoid, word limits.',
+                example: 'Assume prices are approximate, do not invent real stores or URLs.'
+              },
+              {
+                key: 'sources',
+                label: 'Known Sources/Context (If Any)',
+                placeholder: 'Paste notes or say “no extra context”.',
+                example: 'Use only the dimensions I gave for the treehouse platform.'
+              }
+            ]
+          },
+          TAG: {
+            name: 'TAG',
+            tagline: 'Fast & Simple',
+            fields: [
+              {
+                key: 'task',
+                label: 'What is the Task?',
+                placeholder: 'Write, explain, summarize, rewrite...',
+                example: 'Write a poem about a robot.'
+              },
+              {
+                key: 'action',
+                label: 'Action to Take',
+                placeholder: 'How should the AI transform or present it?',
+                example: 'Make it sound like a robot wrote it, with a playful tone.'
+              },
+              {
+                key: 'goal',
+                label: 'Final Goal',
+                placeholder: 'Why you need this.',
+                example: 'To win a school poetry contest.'
+              },
+              {
+                key: 'format',
+                label: 'Desired Output Format',
+                placeholder: 'Lines, stanzas, length, etc.',
+                example: '16–24 lines, grouped into 4 stanzas.'
+              },
+              {
+                key: 'constraints',
+                label: 'Constraints & Boundaries',
+                placeholder: 'Any limits or banned topics.',
+                example: 'No offensive language; avoid copying any known poem.'
+              }
+            ]
+          }
+        };
+
+        const currentFields = computed(() => frameworks[currentFramework.value].fields);
+
+        const activeForm = computed({
+          get() {
+            return allFormData.value[currentFramework.value];
+          },
+          set(val) {
+            allFormData.value[currentFramework.value] = val;
+          }
+        });
+
+        const isComplete = computed(() =>
+          currentFields.value.every(f => (activeForm.value[f.key] || '').trim().length > 0)
+        );
+
+        const generatedPrompt = computed(() => {
+          const fwKey = currentFramework.value;
+          const fields = currentFields.value;
+          const data = activeForm.value;
+
+          let p = '';
+          p += 'You are an advanced AI assistant.\n';
+          p += 'Follow all instructions carefully and do not invent facts.\n';
+          p +=
+            'If you are unsure or lack information, clearly say "I don\'t know" or ask for clarification instead of guessing.\n\n';
+
+          p += `### AI BLUEPRINT: ${fwKey} ###\n\n`;
+
+          fields.forEach(f => {
+            const value = (data[f.key] || '___').trim();
+            p += `${f.label.toUpperCase()}: ${value}\n`;
+          });
+
+          p += '\nRESPONSE REQUIREMENTS:\n';
+          p += '- Base answers only on information you actually know or that is provided in the context.\n';
+          p += '- Do not fabricate references, URLs, statistics, or quotes.\n';
+          p += '- Clearly separate assumptions from verified facts.\n';
+          p += '- Follow the requested style, length, and format exactly.\n';
+          p +=
+            '- If the user asks for something unsafe, forbidden, or outside your capabilities, refuse and explain why in simple language.\n';
+
+          p += '\nOUTPUT FORMAT & STRUCTURE:\n';
+          p +=
+            '- Respect the "Desired Output Format" field above as strictly as possible.\n';
+          p +=
+            '- If you cannot fully comply with the requested format, explain exactly which parts you cannot do and why.\n';
+
+          p += '\nTHINKING MODE (INTERNAL):\n';
+          p += '- First, silently plan the answer step by step.\n';
+          p += '- Then, provide only the final answer in the requested format.\n';
+
+          return p;
+        });
+
+        const next = () => {
+          if (currentStep.value < currentFields.value.length - 1) {
+            currentStep.value++;
+          }
+        };
+
+        const prev = () => {
+          if (currentStep.value > 0) {
+            currentStep.value--;
+          }
+        };
+
+        const changeFramework = f => {
+          currentFramework.value = f;
+          currentStep.value = 0;
+        };
+
+        const copy = async () => {
+          try {
+            await navigator.clipboard.writeText(generatedPrompt.value);
+            copyDone.value = true;
+            setTimeout(() => {
+              copyDone.value = false;
+            }, 2500);
+          } catch (e) {
+            alert('Copy failed. Please select and copy the text manually.');
+          }
+        };
+
+        return {
+          currentStep,
+          currentFramework,
+          frameworks,
+          currentFields,
+          activeForm,
+          generatedPrompt,
+          next,
+          prev,
+          changeFramework,
+          copy,
+          copyDone,
+          isComplete
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
