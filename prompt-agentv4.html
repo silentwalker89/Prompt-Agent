@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Hero Academy | Multi-Model Master</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --hero-orange: #f97316; --hero-blue: #3b82f6; --hero-purple: #8b5cf6; }
+    body { font-family: 'Quicksand', sans-serif; background-color: #f8fafc; background-image: radial-gradient(#e2e8f0 2px, transparent 2px); background-size: 30px 30px; }
+    h1, h2, .font-hero { font-family: 'Fredoka One', cursive; }
+    .card { border-radius: 30px; border: 4px solid #000; box-shadow: 8px 8px 0px #000; background: white; }
+    .btn-pop { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 3px solid #000; box-shadow: 4px 4px 0px #000; }
+    .btn-pop:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #000; }
+    .input-box { border: 3px solid #000; border-radius: 15px; background: #fff; }
+    .model-chip { transition: all 0.3s; border: 2px solid #e2e8f0; cursor: pointer; }
+    .model-chip.active { border-color: #000; background-color: #fef08a; box-shadow: 4px 4px 0px #000; transform: translateY(-2px); }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <div id="app" class="max-w-7xl mx-auto">
+    
+    <header class="text-center mb-10">
+      <h1 class="text-5xl md:text-6xl text-slate-800 mb-2">Prompt Hero Academy</h1>
+      <p class="text-lg font-bold text-blue-600">The Ultimate Forge for the World's Top 5 AI Models</p>
+    </header>
+
+    <section class="mb-10 text-center">
+        <p class="font-hero text-sm uppercase tracking-widest text-slate-400 mb-4">Target Your Super-AI:</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <div v-for="m in aiModels" :key="m.name" 
+                 @click="selectedModel = m"
+                 :class="['model-chip px-6 py-3 rounded-2xl flex items-center gap-3', selectedModel.name === m.name ? 'active' : 'bg-white']">
+                <span class="text-2xl">{{ m.icon }}</span>
+                <div class="text-left">
+                    <p class="font-bold text-sm">{{ m.name }}</p>
+                    <p class="text-[10px] uppercase opacity-60">{{ m.specialty }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div class="lg:col-span-3 space-y-4">
+        <h3 class="font-black uppercase tracking-widest text-xs text-slate-400 ml-2">Select Logic Blueprint</h3>
+        <button v-for="(f, key) in frameworks" @click="changeFramework(key)"
+                :class="['w-full text-left p-4 rounded-2xl font-bold btn-pop flex flex-col', currentFramework === key ? 'bg-orange-400' : 'bg-white']">
+          <span>{{ f.name }}</span>
+          <span class="text-[10px] opacity-70 uppercase">{{ f.tagline }}</span>
+        </button>
+      </div>
+
+      <div class="lg:col-span-5 card p-8 flex flex-col relative">
+        <div class="flex-1 min-h-[380px]">
+          <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase border-2 border-blue-700">
+            Step {{ currentStep + 1 }} of {{ currentFields.length }}
+          </span>
+          <h2 class="text-3xl mt-4 mb-1">{{ currentFields[currentStep].label }}</h2>
+          <p class="text-sm text-slate-500 mb-6 italic">"{{ currentFields[currentStep].example }}"</p>
+
+          <textarea v-model="sharedData[currentFields[currentStep].syncKey]"
+            :placeholder="currentFields[currentStep].placeholder"
+            class="input-box w-full p-6 text-lg h-48 focus:ring-4 ring-orange-100 outline-none transition-all"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-between mt-8">
+          <button @click="prev" :disabled="currentStep === 0" class="btn-pop bg-slate-100 px-6 py-3 rounded-xl font-bold disabled:opacity-0">Back</button>
+          <button v-if="currentStep < currentFields.length - 1" @click="next" class="btn-pop bg-blue-500 text-white px-8 py-3 rounded-xl font-bold">Next Power ➔</button>
+          <button v-else @click="copy" class="btn-pop bg-green-500 text-white px-10 py-3 rounded-xl font-bold">Copy Final Scroll!</button>
+        </div>
+      </div>
+
+      <div class="lg:col-span-4 flex flex-col gap-6">
+        <div class="card bg-slate-900 text-white p-8 flex-1 relative overflow-hidden">
+            <h3 class="text-yellow-400 font-hero text-sm tracking-widest mb-4">Magical Output for {{ selectedModel.name }}</h3>
+            <div class="font-mono text-xs leading-relaxed whitespace-pre-wrap opacity-90 border-l-4 border-yellow-400 pl-4 h-[400px] overflow-auto">
+{{ finalPrompt }}
+            </div>
+            <div v-if="copyDone" class="absolute inset-0 bg-green-500 flex items-center justify-center font-hero text-2xl animate-pulse">COPIED! 🎉</div>
+        </div>
+
+        <div class="bg-white border-4 border-black p-5 rounded-[30px] shadow-[6px_6px_0px_#000]">
+            <h4 class="font-hero text-purple-600 text-sm mb-2">Why {{ selectedModel.name }}?</h4>
+            <p class="text-xs font-bold text-slate-600 leading-tight">{{ selectedModel.logic }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+      setup() {
+        const currentStep = ref(0);
+        const currentFramework = ref('RISEN');
+        const copyDone = ref(false);
+        const sharedData = ref({ role_context: '', mission_task: '', steps_logic: '', style: '', limits: '', format: '' });
+
+        const aiModels = [
+          { name: 'Gemini 1.5', icon: '♊', specialty: 'Massive Data', logic: 'Optimized for long context and document analysis.', meta: 'Analyze the provided context deeply. Extract patterns and maintain high factual consistency across long-form output.' },
+          { name: 'GPT-4o', icon: '🤖', specialty: 'Best Reasoning', logic: 'Top-tier logic and following complex instructions.', meta: 'Think step-by-step. Prioritize logical flow and strict adherence to provided formatting constraints.' },
+          { name: 'Claude 3.5', icon: '🎭', specialty: 'Nuanced & Safe', logic: 'Great for writing and high-integrity tasks.', meta: 'Adopt a helpful, harmless, and honest persona. Use natural, human-like phrasing and provide detailed, nuanced explanations.' },
+          { name: 'Grok-2', icon: '✖️', specialty: 'Real-time & Wit', logic: 'Best for current events and a direct personality.', meta: 'Be direct and punchy. Use real-time knowledge patterns. If requested, use a touch of rebellious humor.' },
+          { name: 'Llama 3.1', icon: '🦙', specialty: 'Open Source', logic: 'Fast and great for standardized coding/text.', meta: 'Provide clear, concise, and highly structured responses. Focus on efficiency and direct task completion.' }
+        ];
+
+        const selectedModel = ref(aiModels[0]);
+
+        const frameworks = {
+          RISEN: { name: 'RISEN', tagline: 'The Structural Expert', fields: [
+            { syncKey: 'role_context', label: 'Who is the AI?', example: 'A master detective.', placeholder: 'The expertise level...' },
+            { syncKey: 'mission_task', label: 'The Mission', example: 'Find the missing cookies.', placeholder: 'The main action...' },
+            { syncKey: 'steps_logic', label: 'The Logic Map', example: 'Check the kitchen first.', placeholder: 'Step 1, Step 2...' },
+            { syncKey: 'style', label: 'The Tone', example: 'Serious and mysterious.', placeholder: 'Funny, formal, etc.' },
+            { syncKey: 'limits', label: 'The No-Go Zone', example: 'Don\'t blame the cat.', placeholder: 'Safety or word limits...' },
+            { syncKey: 'format', label: 'The Visuals', example: 'A detective\'s log.', placeholder: 'Table, list, story...' }
+          ]}
+        };
+
+        const currentFields = computed(() => frameworks[currentFramework.value].fields);
+
+        const finalPrompt = computed(() => {
+          const d = sharedData.value;
+          return `[MODEL CONFIGURATION: ${selectedModel.value.name}]\n[META-INSTRUCTION: ${selectedModel.value.meta}]\n\n` +
+                 `# IDENTITY\nAct as a ${d.role_context || 'Expert AI'}.\n\n` +
+                 `# MISSION\nTask: ${d.mission_task || 'Complete the request.'}\n\n` +
+                 `# EXECUTION GUIDELINES\n- Logic: ${d.steps_logic || 'Standard'}\n- Tone: ${d.style || 'Helpful'}\n- Constraints: ${d.limits || 'None'}\n\n` +
+                 `# FORMAT\nOutput should be: ${d.format || 'Standard text'}\n\n` +
+                 `[THINK STEP-BY-STEP]`;
+        });
+
+        const next = () => currentStep.value++;
+        const prev = () => currentStep.value--;
+        const changeFramework = (f) => { currentFramework.value = f; currentStep.value = 0; };
+        const copy = async () => {
+          await navigator.clipboard.writeText(finalPrompt.value);
+          copyDone.value = true;
+          setTimeout(() => copyDone.value = false, 2500);
+        };
+
+        return { currentStep, currentFramework, frameworks, currentFields, sharedData, finalPrompt, aiModels, selectedModel, next, prev, changeFramework, copy, copyDone };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
