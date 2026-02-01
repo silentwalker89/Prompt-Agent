@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Hero Academy | Multi-Style Architect</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #fff7ed; background-image: radial-gradient(#ffedd5 2px, transparent 2px); background-size: 30px 30px; }
+        h1, h2 { font-family: 'Fredoka One', cursive; }
+        .card { border-radius: 35px; border: 5px solid #000; box-shadow: 10px 10px 0px #000; }
+        .btn-pop { transition: all 0.2s; border: 3px solid #000; box-shadow: 4px 4px 0px #000; }
+        .btn-pop:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #000; }
+        .input-box { border: 3px solid #000; border-radius: 15px; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+<div id="app" class="max-w-7xl mx-auto">
+    
+    <header class="text-center mb-10">
+        <h1 class="text-6xl text-orange-500 drop-shadow-md mb-2">Prompt Hero Academy 🚀</h1>
+        <p class="text-xl font-bold text-slate-600">Choose your blueprint and build a super-prompt!</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <div class="lg:col-span-3 space-y-4">
+            <h3 class="font-black uppercase tracking-widest text-sm text-slate-400 ml-2">Select Blueprint</h3>
+            <button v-for="(f, key) in frameworks" :key="key" 
+                    @click="changeFramework(key)"
+                    :class="['w-full text-left p-4 rounded-2xl font-bold btn-pop flex flex-col', currentFramework === key ? 'bg-yellow-400' : 'bg-white']">
+                <span>{{ f.name }}</span>
+                <span class="text-[10px] opacity-70 uppercase tracking-tighter">{{ f.tagline }}</span>
+            </button>
+        </div>
+
+        <div class="lg:col-span-5 card bg-white p-8 relative">
+            <div class="mb-6 flex items-center justify-between">
+                <span class="bg-purple-100 text-purple-700 px-4 py-1 rounded-full text-xs font-black uppercase border-2 border-purple-700">
+                    Step {{ currentStep + 1 }} of {{ currentFields.length }}
+                </span>
+            </div>
+
+            <div class="min-h-[350px]">
+                <h2 class="text-3xl mb-2 text-slate-800">{{ currentFields[currentStep].label }}</h2>
+                <div class="bg-blue-50 p-4 rounded-xl border-2 border-blue-200 mb-6">
+                    <p class="text-sm font-bold text-blue-600 italic">Example: "{{ currentFields[currentStep].example }}"</p>
+                </div>
+
+                <textarea 
+                    v-model="formData[currentFields[currentStep].key]"
+                    :placeholder="currentFields[currentStep].placeholder"
+                    class="input-box w-full p-6 text-lg h-44 focus:ring-4 ring-yellow-200 outline-none transition-all"
+                ></textarea>
+            </div>
+
+            <div class="flex justify-between mt-8">
+                <button @click="prev" :disabled="currentStep === 0" class="btn-pop bg-slate-100 px-6 py-3 rounded-xl font-bold disabled:opacity-30">Back</button>
+                <button v-if="currentStep < currentFields.length - 1" @click="next" class="btn-pop bg-blue-400 text-white px-8 py-3 rounded-xl font-bold">Next Hero Power!</button>
+                <button v-else @click="copy" class="btn-pop bg-green-400 text-white px-8 py-3 rounded-xl font-bold">Copy Secret Scroll! 🎉</button>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4">
+            <div class="card bg-slate-900 p-8 text-white h-full relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 opacity-10 rotate-12">
+                    <svg width="200" height="200" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
+                <h3 class="text-yellow-400 uppercase font-black text-sm tracking-widest mb-4">The Final Scroll</h3>
+                <div class="font-mono text-sm leading-relaxed whitespace-pre-wrap opacity-90 border-l-4 border-yellow-400 pl-4 py-2">
+{{ generatedPrompt }}
+                </div>
+                <div v-if="copyDone" class="mt-6 bg-green-500/20 text-green-400 p-3 rounded-xl border border-green-500/50 text-center font-bold animate-pulse">
+                    COPIED TO CLIPBOARD! 🚀
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+createApp({
+    setup() {
+        const currentStep = ref(0);
+        const currentFramework = ref('RISEN');
+        const copyDone = ref(false);
+        const formData = ref({});
+
+        const frameworks = {
+            RISEN: {
+                name: 'RISEN', tagline: 'The All-Rounder',
+                fields: [
+                    { key: 'role', label: 'Define the Role', placeholder: 'Expert Scientist...', example: 'A master chef from Italy' },
+                    { key: 'task', label: 'The Task', placeholder: 'Write a recipe...', example: 'Explain why pizza is round' },
+                    { key: 'steps', label: 'Process Steps', placeholder: 'Step 1...', example: 'First explain the dough, then the shape' },
+                    { key: 'example', label: 'Style Example', placeholder: 'Like this...', example: 'Use a funny Italian accent!' },
+                    { key: 'nuance', label: 'The Nuance', placeholder: 'No gluten mention...', example: 'Keep it under 50 words.' }
+                ]
+            },
+            CARE: {
+                name: 'CARE', tagline: 'Best for Results',
+                fields: [
+                    { key: 'context', label: 'The Context', placeholder: 'I am a student...', example: 'I am building a treehouse.' },
+                    { key: 'action', label: 'Action Needed', placeholder: 'Calculate the...', example: 'Give me a list of wood I need.' },
+                    { key: 'result', label: 'Final Goal', placeholder: 'A 5-page report...', example: 'A shopping list for a hardware store.' },
+                    { key: 'example', label: 'Give an Example', placeholder: 'Format it like...', example: 'Group it by wood type and size.' }
+                ]
+            },
+            TAG: {
+                name: 'TAG', tagline: 'Fast & Simple',
+                fields: [
+                    { key: 'task', label: 'What is the Task?', placeholder: 'Write a...', example: 'Write a poem about a robot.' },
+                    { key: 'action', label: 'Action to Take', placeholder: 'Summarize...', example: 'Make it sound like a robot wrote it.' },
+                    { key: 'goal', label: 'Final Goal', placeholder: 'To help me...', example: 'To win a school poetry contest.' }
+                ]
+            }
+        };
+
+        const currentFields = computed(() => frameworks[currentFramework.value].fields);
+
+        const generatedPrompt = computed(() => {
+            const data = formData.value;
+            let p = `### AI BLUEPRINT: ${currentFramework.value} ###\n\n`;
+            currentFields.value.forEach(f => {
+                p += `${f.key.toUpperCase()}: ${data[f.key] || '___'}\n`;
+            });
+            p += `\n--- THINK STEP BY STEP ---`;
+            return p;
+        });
+
+        const next = () => currentStep.value++;
+        const prev = () => currentStep.value--;
+        const changeFramework = (f) => {
+            currentFramework.value = f;
+            currentStep.value = 0;
+            formData.value = {};
+        };
+        const copy = () => {
+            navigator.clipboard.writeText(generatedPrompt.value);
+            copyDone.value = true;
+            setTimeout(() => copyDone.value = false, 2500);
+        };
+
+        return { currentStep, currentFramework, frameworks, currentFields, formData, generatedPrompt, next, prev, changeFramework, copy, copyDone };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
