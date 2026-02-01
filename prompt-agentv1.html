@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Hero Academy! 🚀</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Quicksand', sans-serif; background-color: #f0f9ff; background-image: radial-gradient(#bae6fd 1px, transparent 1px); background-size: 20px 20px; }
+        h1, h2 { font-family: 'Fredoka One', cursive; }
+        .card { border-radius: 40px; border: 6px solid #000; box-shadow: 12px 12px 0px #000; transition: transform 0.2s; }
+        .btn-bouncy:active { transform: scale(0.95); }
+        .hero-input { border: 4px solid #000; border-radius: 20px; outline: none; transition: all 0.2s; }
+        .hero-input:focus { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.5); }
+        .step-enter-active, .step-leave-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .step-enter-from { opacity: 0; transform: translateY(30px) rotate(-2deg); }
+        .step-leave-to { opacity: 0; transform: translateY(-30px) rotate(2deg); }
+    </style>
+</head>
+<body class="text-slate-800 p-4 md:p-8">
+
+<div id="app" class="max-w-6xl mx-auto">
+    
+    <header class="text-center mb-12">
+        <div class="inline-block bg-yellow-400 border-4 border-black px-6 py-2 rounded-full transform -rotate-2 mb-4">
+            <span class="text-2xl font-bold uppercase tracking-widest">Prompt Hero Academy ⚡</span>
+        </div>
+        <h1 class="text-5xl text-blue-600 drop-shadow-lg">Build Your AI Super-Power!</h1>
+        <p class="text-xl mt-2 font-bold text-pink-500">Pick a recipe, answer questions, and get a magical prompt! ✨</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        
+        <section class="card bg-white p-8 relative">
+            
+            <div class="mb-8">
+                <label class="block font-bold text-sm mb-2 uppercase text-slate-400">Choose Your Hero Style:</label>
+                <div class="flex flex-wrap gap-2">
+                    <button v-for="(f, key) in frameworks" @click="changeFramework(key)" 
+                            :class="['px-4 py-2 rounded-xl border-2 border-black font-bold transition btn-bouncy', currentFramework === key ? 'bg-pink-400 text-white' : 'bg-slate-100']">
+                        {{ f.name }}
+                    </button>
+                </div>
+                <p class="text-xs mt-2 italic text-slate-500">{{ frameworks[currentFramework].desc }}</p>
+            </div>
+
+            <hr class="border-2 border-black mb-8 border-dashed">
+
+            <transition name="step" mode="out-in">
+                <div :key="currentStep + currentFramework" class="min-h-[300px]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-blue-500 border-4 border-black rounded-full flex items-center justify-center text-white font-bold text-xl shadow-[4px_4px_0px_#000]">
+                            {{ currentStep + 1 }}
+                        </div>
+                        <h2 class="text-2xl text-slate-700">{{ currentFields[currentStep].label }}</h2>
+                    </div>
+
+                    <p class="text-blue-500 font-bold mb-4">💡 Example: <span class="text-slate-600 font-normal italic">{{ currentFields[currentStep].example }}</span></p>
+
+                    <textarea 
+                        v-model="formData[currentFields[currentStep].key]"
+                        :placeholder="currentFields[currentStep].placeholder"
+                        class="hero-input w-full p-6 text-xl h-40 bg-yellow-50/50"
+                    ></textarea>
+                </div>
+            </transition>
+
+            <div class="flex justify-between mt-8">
+                <button @click="prev" :disabled="currentStep === 0" class="btn-bouncy px-6 py-3 bg-slate-200 border-4 border-black rounded-2xl font-bold disabled:opacity-0">Back</button>
+                <button v-if="currentStep < currentFields.length - 1" @click="next" class="btn-bouncy px-10 py-3 bg-blue-400 border-4 border-black rounded-2xl font-bold shadow-[4px_4px_0px_#000]">Next!</button>
+                <button v-else @click="copy" class="btn-bouncy px-10 py-3 bg-green-400 border-4 border-black rounded-2xl font-bold shadow-[4px_4px_0px_#000]">Finish & Copy! 🎉</button>
+            </div>
+        </section>
+
+        <section>
+            <div class="card bg-pink-100 p-8 sticky top-8">
+                <h3 class="text-2xl mb-4 flex items-center gap-2">
+                    <span class="text-3xl">📜</span> Your Secret Scroll
+                </h3>
+                
+                <div class="bg-white border-4 border-black rounded-3xl p-6 min-h-[400px] shadow-inner font-bold text-slate-700 whitespace-pre-wrap leading-relaxed">
+{{ generatedPrompt }}
+                </div>
+
+                <div v-if="copyDone" class="mt-4 text-center text-green-600 font-bold animate-bounce">
+                    COPIED! Now paste it into Gemini or Grok! 🚀
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, computed } = Vue;
+
+createApp({
+    setup() {
+        const currentStep = ref(0);
+        const currentFramework = ref('RISEN');
+        const copyDone = ref(false);
+        const formData = ref({});
+
+        const frameworks = {
+            RISEN: {
+                name: 'RISEN (Professional)',
+                desc: 'Role, Instructions, Steps, Example, Nuance.',
+                fields: [
+                    { key: 'role', label: 'Who is the AI?', placeholder: 'A space explorer expert...', example: 'A master Lego builder.' },
+                    { key: 'task', label: 'What is the mission?', placeholder: 'Teach me how to...', example: 'Write a story about a dragon.' },
+                    { key: 'steps', label: 'What are the steps?', placeholder: 'First do this, then...', example: '1. Describe the dragon, 2. Describe the cave.' },
+                    { key: 'example', label: 'Show an example!', placeholder: 'Like this...', example: 'The dragon was as green as a broccoli.' },
+                    { key: 'nuance', label: 'Any special rules?', placeholder: 'No scary parts...', example: 'Use simple words and lots of emojis.' }
+                ]
+            },
+            COSTAR: {
+                name: 'CO-STAR (Creative)',
+                desc: 'Context, Objective, Style, Tone, Audience, Response.',
+                fields: [
+                    { key: 'context', label: 'What is happening?', placeholder: 'We are in a spaceship...', example: 'I am planning a birthday party.' },
+                    { key: 'objective', label: 'What do we want?', placeholder: 'Get a list of...', example: 'I want a list of games to play.' },
+                    { key: 'style', label: 'Writing Style?', placeholder: 'Poem, story, list...', example: 'A treasure map style.' },
+                    { key: 'tone', label: 'How does it sound?', placeholder: 'Funny, serious...', example: 'Super excited and silly!' },
+                    { key: 'audience', label: 'Who is reading?', placeholder: 'My pet cat...', example: 'A group of 7-year-olds.' }
+                ]
+            }
+        };
+
+        const currentFields = computed(() => frameworks[currentFramework.value].fields);
+
+        const generatedPrompt = computed(() => {
+            const data = formData.value;
+            if (currentFramework.value === 'RISEN') {
+                return `ACT AS A: ${data.role || '...'}
+YOUR MISSION: ${data.task || '...'}
+FOLLOW THESE STEPS: ${data.steps || '...'}
+HERE IS AN EXAMPLE: ${data.example || '...'}
+RULES: ${data.nuance || '...'}`;
+            } else {
+                return `CONTEXT: ${data.context || '...'}
+GOAL: ${data.objective || '...'}
+STYLE: ${data.style || '...'}
+TONE: ${data.tone || '...'}
+FOR: ${data.audience || '...'}`;
+            }
+        });
+
+        const next = () => currentStep.value++;
+        const prev = () => currentStep.value--;
+        const changeFramework = (f) => {
+            currentFramework.value = f;
+            currentStep.value = 0;
+            formData.value = {};
+        };
+
+        const copy = () => {
+            navigator.clipboard.writeText(generatedPrompt.value);
+            copyDone.value = true;
+            setTimeout(() => copyDone.value = false, 3000);
+        };
+
+        return { currentStep, currentFramework, frameworks, currentFields, formData, generatedPrompt, next, prev, changeFramework, copy, copyDone };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
