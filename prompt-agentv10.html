@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent: Prompt Intelligence | A.P.I. Forge</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Space+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root { --agent-green: #22c55e; --agent-dark: #0f172a; }
+    body { 
+      font-family: 'Inter', sans-serif; background-color: var(--agent-dark); color: #e2e8f0;
+      background-image: radial-gradient(rgba(34, 197, 94, 0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .font-agent { font-family: 'Special Elite', cursive; }
+    .font-mono { font-family: 'Space Mono', monospace; }
+    .terminal-card { border: 2px solid #334155; background: rgba(15, 23, 42, 0.95); border-radius: 4px; }
+    .agent-btn { background: transparent; border: 2px solid var(--agent-green); color: var(--agent-green); text-transform: uppercase; font-weight: bold; transition: all 0.2s; cursor: pointer; }
+    .agent-btn:hover:not(:disabled) { background: var(--agent-green); color: var(--agent-dark); box-shadow: 0 0 15px var(--agent-green); }
+    .agent-btn:disabled { opacity: 0.3; }
+    .input-field { background: #020617; border: 1px solid #334155; color: var(--agent-green); font-family: 'Space Mono', monospace; }
+    .model-chip { border: 1px solid #334155; transition: all 0.3s; cursor: pointer; font-size: 10px; }
+    .model-chip.active { border-color: var(--agent-green); background: rgba(34, 197, 94, 0.1); color: white; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+  </style>
+</head>
+<body class="p-4 md:p-10">
+  <main id="app" class="max-w-7xl mx-auto" v-cloak>
+    <header class="mb-10 border-l-4 border-green-500 pl-6">
+      <h1 class="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter">A.P.I. <span class="text-green-500">Forge</span></h1>
+      <p class="font-mono text-green-700 text-xs tracking-widest uppercase">Multi-Model Framework Intelligence // Protocol 5.0</p>
+    </header>
+
+    <section class="flex flex-wrap gap-2 mb-8">
+      <div 
+        v-for="m in aiModels" 
+        :key="m.name" 
+        @click="selectedModel = m"
+        :class="['model-chip px-4 py-2 rounded font-mono', selectedModel.name === m.name ? 'active' : 'text-slate-500']"
+        role="button" 
+        :aria-pressed="selectedModel.name === m.name">
+        [{{ m.icon }}] {{ m.name }}
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <aside class="lg:col-span-3 space-y-2">
+        <h3 class="font-mono text-[10px] text-slate-500 uppercase mb-3">Logic Blueprints</h3>
+        <button 
+          v-for="(f, key) in frameworks" 
+          :key="key" 
+          @click="changeFramework(key)"
+          :class="['w-full text-left p-3 border rounded font-mono text-xs transition-all', 
+          currentFramework === key ? 'border-green-500 text-green-400 bg-green-500/5' : 'border-slate-800 text-slate-600 hover:border-slate-600']">
+          {{ key }} <span class="block text-[9px] opacity-50">{{ f.tagline }}</span>
+        </button>
+      </aside>
+
+      <section class="lg:col-span-5 terminal-card flex flex-col min-h-[520px]">
+        <div class="bg-slate-800/50 p-2 flex gap-1 border-b border-slate-700">
+          <div class="w-2 h-2 rounded-full bg-red-500"></div>
+          <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+          <span class="ml-2 font-mono text-[9px] text-slate-500 uppercase">{{ currentFramework }} SYSTEM ACTIVE</span>
+        </div>
+        
+        <div class="p-8 flex-1">
+          <div class="mb-6">
+            <span class="font-mono text-[10px] text-green-900 uppercase">Input_Segment_{{ currentStep + 1 }}</span>
+            <h2 class="text-2xl font-bold text-white mt-1 font-agent">{{ currentFields[currentStep].question }}</h2>
+          </div>
+          <textarea 
+            v-model="sharedData[currentFields[currentStep].key]" 
+            class="input-field w-full p-4 text-lg h-44 rounded mb-4 resize-none" 
+            placeholder="Enter intelligence..."></textarea>
+          <div class="bg-black/40 p-3 border-l-2 border-green-900">
+            <p class="text-[10px] text-slate-400 font-mono italic">HINT: {{ currentFields[currentStep].example }}</p>
+          </div>
+        </div>
+
+        <div class="p-6 bg-slate-900/50 flex justify-between">
+          <button @click="prev" :disabled="currentStep === 0" class="agent-btn px-6 py-2 text-[10px]">Previous</button>
+          <button v-if="currentStep < currentFields.length - 1" @click="next" class="agent-btn px-6 py-2 text-[10px]">Next Step</button>
+          <button v-else @click="copyPrompt" class="agent-btn px-6 py-2 text-[10px] border-yellow-500 text-yellow-500">Extract Narrative</button>
+        </div>
+      </section>
+
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="terminal-card bg-black p-6 h-[400px] flex flex-col">
+          <h3 class="text-green-900 font-mono text-[10px] uppercase mb-4 border-b border-green-900/30 pb-2">Structured Internal Log</h3>
+          <div class="font-mono text-[11px] text-green-500 whitespace-pre-wrap overflow-auto flex-1 custom-scrollbar">{{ visualPrompt }}</div>
+        </div>
+        <div class="p-4 border border-slate-800 rounded bg-slate-900/20">
+          <h4 class="text-[10px] font-mono text-yellow-600 uppercase mb-1">Target Profile: {{ selectedModel.name }}</h4>
+          <p class="text-[10px] text-slate-500 leading-tight">{{ selectedModel.meta }}</p>
+        </div>
+      </aside>
+    </div>
+
+    <div v-if="copyDone" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
+      <div class="border-2 border-green-500 p-10 text-center animate-pulse">
+        <h2 class="font-agent text-5xl text-green-500 underline mb-4">EXTRACTED</h2>
+        <p class="font-mono text-slate-400 text-xs">Narrative format successfully copied to clipboard.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const { createApp, ref, computed } = Vue;
+    createApp({
+      setup() {
+        const currentStep = ref(0);
+        const currentFramework = ref('CO-STAR');
+        const copyDone = ref(false);
+        const sharedData = ref({
+          context: '', task: '', style: '', tone: '', audience: '', format: '', 
+          role: '', goal: '', rules: '', steps: '', examples: '', action: ''
+        });
+
+        const aiModels = [
+          { name: 'GEMINI', icon: '♊', meta: 'Optimized for high-token documents and massive context analysis.' },
+          { name: 'GPT-4O', icon: '🤖', meta: 'Tuned for complex logic, coding, and multi-step reasoning.' },
+          { name: 'CLAUDE', icon: '🎭', meta: 'Focused on nuanced, human-like writing and high safety integrity.' },
+          { name: 'GROK-2', icon: '✖️', meta: 'Direct, unfiltered real-time data processing with punchy delivery.' },
+          { name: 'LLAMA', icon: '🦙', meta: 'High-speed technical processing and open-source logic.' }
+        ];
+        const selectedModel = ref(aiModels[0]);
+
+        const frameworks = {
+          'CO-STAR': { tagline: 'Agent Logic', fields: [
+            { key: 'context', label: 'Context', question: 'Field Background?', example: 'Agent is entering a high-security meeting.' },
+            { key: 'task', label: 'Objective', question: 'Mission Goal?', example: 'Summarize core slogans.' },
+            { key: 'style', label: 'Style', question: 'Delivery Style?', example: 'A formal spy report.' },
+            { key: 'audience', label: 'Target', question: 'Intel Recipient?', example: 'Director of Ops.' },
+            { key: 'format', label: 'Output', question: 'Final Shape?', example: 'Markdown Table.' }
+          ]},
+          'TAG': { tagline: 'Tactical Goal', fields: [
+            { key: 'task', label: 'Task', question: 'Mission Task?', example: 'Decode the intercepted signal.' },
+            { key: 'action', label: 'Action', question: 'Processing Step?', example: 'Translate to English.' },
+            { key: 'goal', label: 'Goal', question: 'Desired Result?', example: 'To understand the enemy location.' }
+          ]},
+          'CARE': { tagline: 'Executive Summary', fields: [
+            { key: 'context', label: 'Situation', question: 'Current Context?', example: 'The server is under attack.' },
+            { key: 'action', label: 'Action', question: 'Immediate Task?', example: 'Isolate the infected node.' },
+            { key: 'goal', label: 'Result', question: 'Success Metric?', example: 'Restore 100% uptime.' },
+            { key: 'examples', label: 'Example', question: 'Style Reference?', example: 'Like the 2024 security patch.' }
+          ]},
+          'TRACE': { tagline: 'Technical Path', fields: [
+            { key: 'task', label: 'Operation', question: 'Core Task?', example: 'Optimize the database.' },
+            { key: 'rules', label: 'Rules', question: 'Constraints?', example: 'No downtime allowed.' },
+            { key: 'steps', label: 'Steps', question: 'Execution Flow?', example: '1. Index, 2. Clean, 3. Cache.' },
+            { key: 'context', label: 'Env', question: 'Environment?', example: 'SQL Server 2022.' }
+          ]},
+          'RISEN': { tagline: 'Identity Protocol', fields: [
+            { key: 'role', label: 'Role', question: 'Agent Identity?', example: 'Senior Cryptographer.' },
+            { key: 'task', label: 'Task', question: 'The Mission?', example: 'Crack this code.' },
+            { key: 'steps', label: 'Steps', question: 'Methodology?', example: 'Brute force then dictionary.' },
+            { key: 'examples', label: 'Example', question: 'Reference?', example: 'Format as a HEX string.' }
+          ]}
+        };
+
+        const currentFields = computed(() => frameworks[currentFramework.value].fields);
+        
+        const visualPrompt = computed(() => {
+          let p = `[REPORT_ID: ${currentFramework.value}]\n[TARGET: ${selectedModel.value.name}]\n--------------------------\n`;
+          currentFields.value.forEach(f => { p += `>> ${f.label.toUpperCase()}: ${sharedData.value[f.key] || '...'}\n`; });
+          return p;
+        });
+
+        const narrativePrompt = computed(() => {
+          const d = sharedData.value;
+          const fw = currentFramework.value;
+          let p = `Regarding our mission for ${selectedModel.value.name}. `;
+          if (fw === 'CO-STAR') p += `In the context of ${d.context}, your objective is to ${d.task}. Please use a ${d.style} style for ${d.audience}, delivering the final intel as ${d.format}.`;
+          else if (fw === 'TAG') p += `The current task is to ${d.task}. You must perform the action: ${d.action}, with the ultimate goal of ${d.goal}.`;
+          else if (fw === 'CARE') p += `Given that ${d.context}, your required action is ${d.action} to achieve ${d.goal}. Follow the example pattern: ${d.examples}.`;
+          else if (fw === 'TRACE') p += `Complete the operation: ${d.task}. Following the rules: ${d.rules}, execute these steps: ${d.steps}. Environment: ${d.context}.`;
+          else if (fw === 'RISEN') p += `Act as a ${d.role}. Your instructions are to ${d.task}. Follow these specific steps: ${d.steps}. Reference this example: ${d.examples} and note these nuances: ${d.context}.`;
+          p += ` Proceed with step-by-step reasoning.`;
+          return p;
+        });
+
+        const next = () => { if (currentStep.value < currentFields.value.length - 1) currentStep.value++; };
+        const prev = () => { if (currentStep.value > 0) currentStep.value--; };
+        const changeFramework = (f) => { currentFramework.value = f; currentStep.value = 0; };
+        
+        const copyPrompt = async () => {
+          try {
+            await navigator.clipboard.writeText(narrativePrompt.value);
+            copyDone.value = true;
+            setTimeout(() => copyDone.value = false, 2500);
+          } catch (err) {
+            console.error('Failed to copy!');
+          }
+        };
+
+        return { 
+          currentStep, currentFramework, frameworks, currentFields, 
+          sharedData, visualPrompt, copyPrompt, copyDone, next, prev, 
+          changeFramework, aiModels, selectedModel 
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
